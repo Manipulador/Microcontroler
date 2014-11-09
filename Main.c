@@ -1,32 +1,37 @@
 #include <18F4550.h>
 #device ADC = 8
-#fuses HSPLL, NOWDT, NOPROTECT, NOLVP, NODEBUG, USBDIV, PLL5, CPUDIV1, VREGEN, NOMCLR
+#fuses HSPLL, NOWDT, NOPROTECT, NOLVP, NODEBUG, USBDIV, PLL5, CPUDIV1, VREGEN, MCLR
 #use delay (clock=20000000)
 #include "usb_cdc.h"
 #include "pic18_usb.h"
 
 //Leds de Informação
-#define LedPos pin_b4               // Vermelho
-#define LedTrab pin_b3              // Verde
-#define LedUsb pin_b2               // Branco
+#define Led_B pin_b4               // Azul
+#define Led_G pin_b3               // Verde
+#define Led_R pin_b2               // Vermelho
 /*Pinos de acionamento de motores
 das juntas*/
-#define Junta0D pin_d0
-#define Junta0E pin_d1
-#define Junta1D pin_d2
-#define Junta1E pin_d3
+#define Junta0E pin_a5
+#define Junta0D pin_a4
+#define Junta1E pin_d0
+#define Junta1D pin_d1
+#define Junta2E pin_d2
 #define Junta2D pin_d4
-#define Junta2E pin_d5
-#define Junta3D pin_d6
-#define Junta3E pin_d7
+#define Junta3E pin_d6
+#define Junta3D pin_d5
 /*Pinos de acionamento de motores
 da garra*/
-#define GarraA pin_a4
-#define GarraF pin_a5
+#define GarraA pin_d7
+#define GarraF pin_b5
 //Pinos sensores da Garra
 #define Aberta pin_e0
 #define Fechada pin_e1
-#define LedGarra pin_b5
+#define LedGarra pin_d3
+//Pinos enable para Pontes-H
+#define Enable_0 pin_e2
+#define Enable_1 pin_c0
+#define Enable_2 pin_c1
+#define Enable_3 pin_c2
 
 void main ()
 {
@@ -75,16 +80,28 @@ void main ()
    unsigned int8 Aux_1;
    unsigned int8 Aux_2;
    unsigned int8 Aux_3;
+   
+   //Setando Led na cor amarela
+   output_low(Led_R);
+   output_low(Led_G);
+   output_high(Led_B);
+   //reseta enable's
+   output_low(Enable_0);
+   output_low(Enable_1);
+   output_low(Enable_2);
+   output_low(Enable_3);
    //Setando Porto de motores como desligado
-   SET_TRIS_D( 0xFF );
-   output_d(0x00);
-   //Setando Motores da Garra como desligados
+   output_low(Junta0E);
+   output_low(Junta0D);
+   output_low(Junta1E);
+   output_low(Junta1D);
+   output_low(Junta2E);
+   output_low(Junta2D);
+   output_low(Junta3E);
+   output_low(Junta3D);
    output_low(GarraF);
    output_low(GarraA);
-   //Setando Leds como desligados
-   output_low(LedUsb);
-   output_low(LedPos);
-   output_high(LedTrab);
+   //Setando led da garra como desligado 
    output_low(LedGarra);
    /*Atribuindo os valores desejados para as juntas 
    como os valores obtidos pela leitura do ADC.
@@ -107,8 +124,8 @@ void main ()
    delay_us(20);
    Junta2_Desejado = read_adc();
    delay_us(20);
-   set_adc_channel(3);
    
+   set_adc_channel(3);
    delay_us(20);
    Junta3_Desejado = read_adc();
    delay_us(20);
@@ -124,6 +141,9 @@ void main ()
       
       if (Junta0_Desejado < Junta0_Atual-Range || Junta0_Desejado > Junta0_Atual+Range)  //Fora do range
       {
+         //Seta enable (Provisório -> até que sejam usados PWMs)
+         output_high(Enable_0);
+         
          if(Junta0_Desejado < Junta0_Atual-Range)  //Depois do valor desejado
          { 
             output_high(Junta0E); 
@@ -137,9 +157,12 @@ void main ()
       }
       else  //Dentro do range
       {
+         //Reseta enable
+         output_low(Enable_0);
+         
          output_low(Junta0D); 
          output_low(Junta0E); 
-         a=1;  //Contador de parada
+         if (a==0) a=1;  //Contador de parada
       }
       
       ////Acionamento do Motor 1
@@ -151,6 +174,9 @@ void main ()
       
       if (Junta1_Desejado < Junta1_Atual-Range || Junta1_Desejado > Junta1_Atual+Range)   //Fora do range
       {
+         //Seta enable (Provisório -> até que sejam usados PWMs)
+         output_high(Enable_1);
+         
          if(Junta1_Desejado < Junta1_Atual-Range)  //Depois do valor desejado
          { 
             output_high(Junta1E); 
@@ -164,9 +190,12 @@ void main ()
       }
       else  //Dentro do range 
       { 
+         //Reseta enable
+         output_low(Enable_1);
+         
          output_low(Junta1D); 
          output_low(Junta1E);
-         b=1;  //Contador de parada 
+         if (b==0) b=1;  //Contador de parada 
       }
       
       ////Acionamento do Motor 2
@@ -178,6 +207,9 @@ void main ()
       
       if (Junta2_Desejado < Junta2_Atual-Range || Junta2_Desejado > Junta2_Atual+Range)  //Fora do range
       {
+         //Seta enable (Provisório -> até que sejam usados PWMs)
+         output_high(Enable_2);
+         
          if(Junta2_Desejado < Junta2_Atual-Range)  //Depois do valor desejado 
          { 
             output_high(Junta2E); 
@@ -191,9 +223,12 @@ void main ()
       }
       else  //Dentro do range 
       {  
+         //Reseta enable
+         output_low(Enable_2);
+         
          output_low(Junta2D); 
          output_low(Junta2E); 
-         c=1; //Contador de parada
+         if (c==0) c=1; //Contador de parada
       }
       
       ////Acionamento do Motor 3
@@ -205,6 +240,9 @@ void main ()
       
       if (Junta3_Desejado < Junta3_Atual-Range || Junta3_Desejado > Junta3_Atual+Range)  //Fora do range
       {
+         //Seta enable (Provisório -> até que sejam usados PWMs)
+         output_high(Enable_3);
+         
          if(Junta3_Desejado < Junta3_Atual-Range)  //Depois do valor desejado 
          { 
             output_high(Junta3E);
@@ -218,9 +256,12 @@ void main ()
       }
       else  //Dentro do range 
       { 
+         //Reseta enable
+         output_low(Enable_3);
+         
          output_low(Junta3D); 
          output_low(Junta3E); 
-         d=1;  //Contador de parada 
+         if (d==0) d=1;  //Contador de parada 
       }
       
       ////Acionamento da Garra
@@ -244,7 +285,6 @@ void main ()
       //Comunicação e sinalização de parada
       if (a==1 && b==1 && c==1 && d==1 && e==1)  //Todos os sensores já chegaram 
       {
-         output_high(LedPos);     //Aciona led de parada
          if(z==0)                // O 'z' somente será zero quando um novo dado chegar no buffer 
          {                      //e este for um dado de posicionamento
             usb_task();
@@ -262,8 +302,9 @@ void main ()
       // Comunicação USB (Entrada de novos dados)
       if (usb_cdc_kbhit())  //Testa dados no buffer de leitura 
       {
-         output_high(LedUsb);       //Aciona led comunicação
-         output_low(LedPos);        //Desliga led de parada
+         output_high(Led_R);            //Aciona led na cor azul
+         output_high(Led_G);
+         output_low(Led_B);
          
          a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
          //Armazenando dados lidos do buffer em variáveis auxiliares
@@ -321,7 +362,7 @@ void main ()
          Limita extremo inferior
          Limita extremo superior
          Atribui nova posição desejada */
-         else
+         /*else                                                             --------  Definir valores !
          {
             z=0; //Zera contador (novo acionamento)
             if (Aux_0 < 50) Junta0_Desejado = 50;           
@@ -339,10 +380,22 @@ void main ()
             if (Aux_3 < 70) Junta3_Desejado = 70;
             else if (Aux_3 > 190) Junta3_Desejado = 190;
             else Junta3_Desejado = Aux_3;
-         }
-         output_low(LedUsb); //Desliga led de comunicação
+         }*/
       }
       usb_task();  //Confirma estado do Hardware USB
       delay_us(20);
+      
+      if (z==0)
+      {
+         output_low(Led_R);            //Aciona led na cor vermelha
+         output_high(Led_G);
+         output_high(Led_B);
+      }
+      else
+      {
+         output_high(Led_R);            //Aciona led na cor verde
+         output_low(Led_G);
+         output_high(Led_B);
+      }
    }
 }
