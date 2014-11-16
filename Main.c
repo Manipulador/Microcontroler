@@ -5,6 +5,7 @@
 #include "usb_cdc.h"
 #include "pic18_usb.h"
 
+
 //Leds de Informação
 #define Led_B pin_b4               // Azul
 #define Led_G pin_b3               // Verde
