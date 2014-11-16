@@ -1,54 +1,60 @@
 #include <18F4550.h>
 #device ADC = 8
-#fuses HSPLL, NOWDT, NOPROTECT, NOLVP, NODEBUG, USBDIV, PLL5, CPUDIV1, VREGEN, MCLR
+#fuses HS, NOWDT, NOPROTECT, NOLVP, BROWNOUT, MCLR
 #use delay (clock=20000000)
-#include "usb_cdc.h"
-#include "pic18_usb.h"
+#use rs232 (baud=9600, parity=N, xmit=PIN_C6, rcv=PIN_C7, bits=8)
+#int_RDA
+void RDA(void)
+{
 
+}
+
+/*Pinos sensores
+pin_a0 (Sensor 0)
+pin_a1 (Sensor 1)
+pin_a2 (Sensor 2)
+pin_a3 (Sensor 3)
+*/
+//Pinos sensores da Garra
+#define Aberta pin_a4
+#define Fechada pin_a5
+#define LedGarra pin_d0
+//Pinos enable para Pontes-H
+#define Enable_0 pin_d2
+#define Enable_1 pin_d3
+#define Enable_2 pin_c4
+#define Enable_3 pin_c5
 //Leds de Informação
-#define Led_B pin_b4               // Azul
-#define Led_G pin_b3               // Verde
-#define Led_R pin_b2               // Vermelho
+#define Led_B pin_c0               // Azul
+#define Led_G pin_c1               // Verde
+#define Led_R pin_c2               // Vermelho
 /*Pinos de acionamento de motores
 das juntas*/
-#define Junta0E pin_a5
-#define Junta0D pin_a4
-#define Junta1E pin_d0
-#define Junta1D pin_d1
-#define Junta2E pin_d2
-#define Junta2D pin_d4
-#define Junta3E pin_d6
-#define Junta3D pin_d5
+#define Junta0E pin_b7
+#define Junta0D pin_b6
+#define Junta1E pin_b5
+#define Junta1D pin_b4
+#define Junta2E pin_b3
+#define Junta2D pin_b2
+#define Junta3E pin_b1
+#define Junta3D pin_b0
 /*Pinos de acionamento de motores
 da garra*/
 #define GarraA pin_d7
-#define GarraF pin_b5
-//Pinos sensores da Garra
-#define Aberta pin_e0
-#define Fechada pin_e1
-#define LedGarra pin_d3
-//Pinos enable para Pontes-H
-#define Enable_0 pin_e2
-#define Enable_1 pin_c0
-#define Enable_2 pin_c1
-#define Enable_3 pin_c2
-
+#define GarraF pin_d6
 void main ()
-{
+{  
+   //Habilitando interrupções
+   enable_interrupts(INT_RDA);
+   enable_interrupts(GLOBAL);
    /*Setando portas de leitura 
    analógica*/
    SETUP_ADC_PORTS(AN0_TO_AN3);
    SETUP_ADC(ADC_CLOCK_INTERNAL);
    delay_us(20);
-   //Inicia hardware USB
-   usb_cdc_init();
-   usb_init();
    //Setando pinos como entradas digitais
    output_float(Aberta);
    output_float(Fechada);
-   /*Ativa pino de interrupção 
-   externa (A implementar)*/
-   ENABLE_INTERRUPTS(GLOBAL);
    /*Variável de faixa de tolerância
    para posicionamento das juntas 
    (por unidade de Bits do ADC)*/

@@ -1,67 +1,143 @@
 #include <18F4550.h>
 #device ADC = 8
-#fuses HSPLL, NOWDT, NOPROTECT, NOLVP, NODEBUG, USBDIV, PLL5, CPUDIV1, VREGEN, MCLR
-#use delay (clock=20000000)
-#include "usb_cdc.h"
-#include "pic18_usb.h"
+#fuses HS, NOWDT, NOPROTECT, NOLVP, BROWNOUT, MCLR, CPUDIV4
+#use delay (crystal=20000000, clock=5000000)
+#use rs232 (baud=9600, parity=N, xmit=PIN_C6, rcv=PIN_C7, bits=8)
+#int_RDA
+void RDA(void)
+{ 
+         output_high(Led_R);            //Quando recebe dado aciona led na cor azul
+         output_high(Led_G);
+         output_low(Led_B);
+         
+         a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
+         //Armazenando dados lidos do buffer em variáveis auxiliares
+         Aux_0 = getc();
+         Aux_1 = getc();
+         Aux_2 = getc();
+         Aux_3 = getc();
+         //Testando se os novos dados colhidos são comandos espefícos
+         if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')        //Comando para parar acionamento
+         {  
+            output_low(Junta0D);output_low(Junta1D);output_low(Junta2D);output_low(Junta3D);output_low(Junta4D);
+            output_low(Junta0E);output_low(Junta1E);output_low(Junta2E);output_low(Junta3E);output_low(Junta4E);
+            Junta0_Desejado = Junta0_Atual;
+            Junta1_Desejado = Junta1_Atual;
+            Junta2_Desejado = Junta2_Atual;
+            Junta3_Desejado = Junta3_Atual;
+            z=0;
+         }
+         //Comando para enviar dados dos sensores
+         else if((char)Aux_0 == 'r' && (char)Aux_1 == 'e' && (char)Aux_2 == 'a' && (char)Aux_3 == 'd')   
+         { 
+            usb_cdc_putc(Junta0_Atual);
+            usb_cdc_putc(Junta1_Atual);
+            usb_cdc_putc(Junta2_Atual);
+            usb_cdc_putc(Junta3_Atual);
+            z=1; //z deve ser 1 pois após o comando "read" dados não devem ser retornados 
+         }
+         //Comando para fechar garra
+         else if((char)Aux_0 == 'g' && (char)Aux_1 == 'r' && (char)Aux_2 == 'a' && (char)Aux_3 == 'b')   
+         { 
+            Garra_desejado=1;
+            z=0; //Zera contador (novo acionamento)
+         }
+         //Comando para abrir garra
+         else if((char)Aux_0 == 'd' && (char)Aux_1 == 'r' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')  
+         {
+            Garra_desejado=0;
+            z=0; //Zera contador (novo acionamento)
+         }
+         //Comando para ligar/desligar lanterna led
+         else if((char)Aux_0 == 'l' && (char)Aux_1 == 'u' && (char)Aux_2 == 'z' && (char)Aux_3 == '!')  
+         {
+            output_toggle(LedGarra);
+            z=1; //z deve ser 1 pois após o comando "read" dados não devem ser retornados 
+         }
+         //Comando para posição de repouso
+         else if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'n' && (char)Aux_3 == 'd')   
+         {
+            Junta0_Desejado = 127;
+            Junta1_Desejado = 127;
+            Junta2_Desejado = 110;
+            Junta3_Desejado = 127;
+            z=0; //Zera contador (novo acionamento)
+         }
+         /*Se não são comandos, serão dados de novas posições desejadas:
+         Limita extremo inferior**
+         Limita extremo superior**
+         Atribui nova posição desejada */
+         else                                                             
+         {
+            z=0; //Zera contador (novo acionamento)
+            //if (Aux_0 < 50) Junta0_Desejado = 50;           
+            //else if (Aux_0 > 190) Junta0_Desejado = 190;    
+            else Junta0_Desejado = Aux_0;            
+            //if (Aux_1 < 25) Junta1_Desejado = 25;           
+            //else if (Aux_1 > 195) Junta1_Desejado = 195;
+            else Junta1_Desejado = Aux_1;
+            //if (Aux_2 < 40) Junta2_Desejado = 40;
+            //else if (Aux_2 > 250) Junta2_Desejado = 250;
+            else Junta2_Desejado = Aux_2;
+            //if (Aux_3 < 70) Junta3_Desejado = 70;
+            //else if (Aux_3 > 190) Junta3_Desejado = 190;
+            else Junta3_Desejado = Aux_3;
+         }
+}
 
-
+/*Pinos sensores
+pin_a0 (Sensor 0)
+pin_a1 (Sensor 1)
+pin_a2 (Sensor 2)
+pin_a3 (Sensor 3)
+*/
+//Pinos sensores da Garra
+#define Aberta pin_a4
+#define Fechada pin_a5
+#define LedGarra pin_d0
+//Pinos enable para Pontes-H
+#define Enable_0 pin_d2
+#define Enable_1 pin_d3
+#define Enable_2 pin_c4
+#define Enable_3 pin_c5
 //Leds de Informação
-#define Led_B pin_b4               // Azul
-#define Led_G pin_b3               // Verde
-#define Led_R pin_b2               // Vermelho
+#define Led_B pin_c0               // Azul
+#define Led_G pin_c1               // Verde
+#define Led_R pin_c2               // Vermelho
 /*Pinos de acionamento de motores
 das juntas*/
-#define Junta0E pin_a5
-#define Junta0D pin_a4
-#define Junta1E pin_d0
-#define Junta1D pin_d1
-#define Junta2E pin_d2
-#define Junta2D pin_d4
-#define Junta3E pin_d6
-#define Junta3D pin_d5
+#define Junta0E pin_b7
+#define Junta0D pin_b6
+#define Junta1E pin_b5
+#define Junta1D pin_b4
+#define Junta2E pin_b3
+#define Junta2D pin_b2
+#define Junta3E pin_b1
+#define Junta3D pin_b0
 /*Pinos de acionamento de motores
 da garra*/
 #define GarraA pin_d7
-#define GarraF pin_b5
-//Pinos sensores da Garra
-#define Aberta pin_e0
-#define Fechada pin_e1
-#define LedGarra pin_d3
-//Pinos enable para Pontes-H
-#define Enable_0 pin_e2
-#define Enable_1 pin_c0
-#define Enable_2 pin_c1
-#define Enable_3 pin_c2
-
+#define GarraF pin_d6
 void main ()
-{
+{  
+   //Habilitando interrupções
+   enable_interrupts(INT_RDA);
+   enable_interrupts(GLOBAL);
    /*Setando portas de leitura 
    analógica*/
    SETUP_ADC_PORTS(AN0_TO_AN3);
    SETUP_ADC(ADC_CLOCK_INTERNAL);
    delay_us(20);
-   //Inicia hardware USB
-   usb_cdc_init();
-   usb_init();
    //Setando pinos como entradas digitais
    output_float(Aberta);
    output_float(Fechada);
-   /*Ativa pino de interrupção 
-   externa (A implementar)*/
-   ENABLE_INTERRUPTS(GLOBAL);
    /*Variável de faixa de tolerância
    para posicionamento das juntas 
    (por unidade de Bits do ADC)*/
    unsigned int8 Range=4;
    //Variáveis auxiliares para sinalização de parada 
-   int1 a=0;
-   int1 b=0;
-   int1 c=0;
-   int1 d=0;
-   int1 e=0;
-   //Variável auxiliar para comunicação de parada
-   // inicia em 1 para não enviar o sinal na primeira iteração
+   int1 a=0; int1 b=0; int1 c=0; int1 d=0; int1 e=0;
+   //Variável auxiliar para comunicação de parada, inicia em 1 para não enviar o sinal na primeira iteração
    int1 z=1;
    /*Variáveis para armazenamento dos valores 
    dos sensores das juntas*/
@@ -76,12 +152,11 @@ void main ()
    int1 Garra_desejado=0;              // 1=Fechada, 0=Aberta
    /* Variáveis auxiliares para 
    verificação de comandos em uma 
-   nova entrada de dados desejados via USB*/
+   nova entrada de dados desejados*/
    unsigned int8 Aux_0;
    unsigned int8 Aux_1;
    unsigned int8 Aux_2;
    unsigned int8 Aux_3;
-   
    //Setando Led na cor amarela
    output_low(Led_R);
    output_low(Led_G);
@@ -131,7 +206,7 @@ void main ()
    Junta3_Desejado = read_adc();
    delay_us(20);
    
-   while(1)
+   while(true)
    {
       ////Acionamento do Motor 0
       // Leitura dos sensores da junta 0
@@ -288,103 +363,10 @@ void main ()
       {
          if(z==0)                // O 'z' somente será zero quando um novo dado chegar no buffer 
          {                      //e este for um dado de posicionamento
-            usb_task();
-            delay_us(20);
-            usb_cdc_putc(0);
+            printf("OK");
             z=1;
          }
       }
-      
-      /* Nova entrada de dados desejados
-      via comunicação USB*/
-      usb_task();  //Confirma estado do Hardware USB
-      delay_us(20);
-      
-      // Comunicação USB (Entrada de novos dados)
-      if (usb_cdc_kbhit())  //Testa dados no buffer de leitura 
-      {
-         output_high(Led_R);            //Aciona led na cor azul
-         output_high(Led_G);
-         output_low(Led_B);
-         
-         a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
-         //Armazenando dados lidos do buffer em variáveis auxiliares
-         Aux_0 = usb_cdc_getc();
-         Aux_1 = usb_cdc_getc();
-         Aux_2 = usb_cdc_getc();
-         Aux_3 = usb_cdc_getc();
-         //Testando se os novos dados colhidos são comandos espefícos
-         if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')        //Comando para parar acionamento
-         { 
-            output_b(0x00);
-            Junta0_Desejado = Junta0_Atual;
-            Junta1_Desejado = Junta1_Atual;
-            Junta2_Desejado = Junta2_Atual;
-            Junta3_Desejado = Junta3_Atual;
-            z=0; //Zera contador (novo acionamento)
-         }
-         //Comando para enviar dados dos sensores
-         else if((char)Aux_0 == 'r' && (char)Aux_1 == 'e' && (char)Aux_2 == 'a' && (char)Aux_3 == 'd')   
-         { 
-            usb_cdc_putc(Junta0_Atual);
-            usb_cdc_putc(Junta1_Atual);
-            usb_cdc_putc(Junta2_Atual);
-            usb_cdc_putc(Junta3_Atual);
-            z=1; //z deve ser 1 pois após o comando "read" dados não devem ser retornados para o matlab
-         }
-         //Comando para fechar garra
-         else if((char)Aux_0 == 'g' && (char)Aux_1 == 'r' && (char)Aux_2 == 'a' && (char)Aux_3 == 'b')   
-         { 
-            Garra_desejado=1;
-            z=0; //Zera contador (novo acionamento)
-         }
-         //Comando para abrir garra
-         else if((char)Aux_0 == 'd' && (char)Aux_1 == 'r' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')  
-         {
-            Garra_desejado=0;
-            z=0; //Zera contador (novo acionamento)
-         }
-         //Comando para ligar/desligar lanterna led
-         else if((char)Aux_0 == 'l' && (char)Aux_1 == 'u' && (char)Aux_2 == 'z' && (char)Aux_3 == '!')  
-         {
-            output_toggle(LedGarra);
-            z=1; //z deve ser 1 pois após o comando "read" dados não devem ser retornados para o matlab
-         }
-         //Comando para posição de repouso
-         else if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'n' && (char)Aux_3 == 'd')   
-         {
-            Junta0_Desejado = 127;
-            Junta1_Desejado = 127;
-            Junta2_Desejado = 110;
-            Junta3_Desejado = 127;
-            z=0; //Zera contador (novo acionamento)
-         }
-         /*Se não são comandos, serão dados de novas posições desejadas:
-         Limita extremo inferior
-         Limita extremo superior
-         Atribui nova posição desejada */
-         /*else                                                             --------  Definir valores !
-         {
-            z=0; //Zera contador (novo acionamento)
-            if (Aux_0 < 50) Junta0_Desejado = 50;           
-            else if (Aux_0 > 190) Junta0_Desejado = 190;    
-            else Junta0_Desejado = Aux_0;
-            
-            if (Aux_1 < 25) Junta1_Desejado = 25;           
-            else if (Aux_1 > 195) Junta1_Desejado = 195;
-            else Junta1_Desejado = Aux_1;
-            
-            if (Aux_2 < 40) Junta2_Desejado = 40;
-            else if (Aux_2 > 250) Junta2_Desejado = 250;
-            else Junta2_Desejado = Aux_2;
-            
-            if (Aux_3 < 70) Junta3_Desejado = 70;
-            else if (Aux_3 > 190) Junta3_Desejado = 190;
-            else Junta3_Desejado = Aux_3;
-         }*/
-      }
-      usb_task();  //Confirma estado do Hardware USB
-      delay_us(20);
       
       if (z==0)
       {
