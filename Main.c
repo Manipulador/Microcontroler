@@ -15,6 +15,62 @@
 #use delay(clock=20000000)
 #use rs232(baud=9600,parity=N,xmit=PIN_C6,rcv=PIN_C7,bits=8,stream=PORT1)
 
+
+//Pinos sensores da Garra
+#define Aberta pin_a4
+#define Fechada pin_a5
+#define LedGarra pin_d0
+//Pinos enable para Pontes-H
+#define Enable_0 pin_d2
+#define Enable_1 pin_d3
+#define Enable_2 pin_c4
+#define Enable_3 pin_c5
+//Leds de Informação
+#define Led_B pin_c0               // Azul
+#define Led_G pin_c1               // Verde
+#define Led_R pin_c2               // Vermelho
+/*Pinos de acionamento de motores
+das juntas*/
+#define Junta0E pin_b7
+#define Junta0D pin_b6
+#define Junta1E pin_b5
+#define Junta1D pin_b4
+#define Junta2E pin_b3
+#define Junta2D pin_b2
+#define Junta3E pin_b1
+#define Junta3D pin_b0
+/*Pinos de acionamento de motores
+da garra*/
+#define GarraA pin_d7
+#define GarraF pin_d6
+
+/*Variável de faixa de tolerância
+   para posicionamento das juntas 
+   (por unidade de Bits do ADC)*/
+   unsigned int8 Range=4;
+   //Variáveis auxiliares para sinalização de parada(chegada no ponto) 
+   int1 a=0; int1 b=0; int1 c=0; int1 d=0; int1 e=0;
+   //Variável auxiliar para comunicação de parada, inicia em 1 para não enviar o sinal na primeira iteração
+   int1 z=1;
+   /*Variáveis para armazenamento dos valores 
+   dos sensores das juntas*/
+   unsigned int8 Junta0_Atual;
+   unsigned int8 Junta0_Desejado;
+   unsigned int8 Junta1_Atual;
+   unsigned int8 Junta1_Desejado;
+   unsigned int8 Junta2_Atual;
+   unsigned int8 Junta2_Desejado;
+   unsigned int8 Junta3_Atual;
+   unsigned int8 Junta3_Desejado;
+   int1 Garra_desejado=0;              // 1=Fechada, 0=Aberta
+   /* Variáveis auxiliares para 
+   verificação de comandos em uma 
+   nova entrada de dados desejados*/
+   unsigned int8 Aux_0;
+   unsigned int8 Aux_1;
+   unsigned int8 Aux_2;
+   unsigned int8 Aux_3;
+
 #int_RDA //Importante Limpar o Buffer! Caso contrário o promgrama fica preso na interrupção
 void RDA(void)
 { 
@@ -32,8 +88,8 @@ void RDA(void)
          //Testando se os novos dados colhidos são comandos espefícos
          if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')        //Comando para parar acionamento
          {  
-            output_low(Junta0D);output_low(Junta1D);output_low(Junta2D);output_low(Junta3D);output_low(Junta4D);
-            output_low(Junta0E);output_low(Junta1E);output_low(Junta2E);output_low(Junta3E);output_low(Junta4E);
+            output_low(Junta0D);output_low(Junta1D);output_low(Junta2D);output_low(Junta3D);
+            output_low(Junta0E);output_low(Junta1E);output_low(Junta2E);output_low(Junta3E);
             Junta0_Desejado = Junta0_Atual;
             Junta1_Desejado = Junta1_Atual;
             Junta2_Desejado = Junta2_Atual;
@@ -99,39 +155,7 @@ void RDA(void)
          }
 }
 
-/*Pinos sensores
-pin_a0 (Sensor 0)
-pin_a1 (Sensor 1)
-pin_a2 (Sensor 2)
-pin_a3 (Sensor 3)
-*/
-//Pinos sensores da Garra
-#define Aberta pin_a4
-#define Fechada pin_a5
-#define LedGarra pin_d0
-//Pinos enable para Pontes-H
-#define Enable_0 pin_d2
-#define Enable_1 pin_d3
-#define Enable_2 pin_c4
-#define Enable_3 pin_c5
-//Leds de Informação
-#define Led_B pin_c0               // Azul
-#define Led_G pin_c1               // Verde
-#define Led_R pin_c2               // Vermelho
-/*Pinos de acionamento de motores
-das juntas*/
-#define Junta0E pin_b7
-#define Junta0D pin_b6
-#define Junta1E pin_b5
-#define Junta1D pin_b4
-#define Junta2E pin_b3
-#define Junta2D pin_b2
-#define Junta3E pin_b1
-#define Junta3D pin_b0
-/*Pinos de acionamento de motores
-da garra*/
-#define GarraA pin_d7
-#define GarraF pin_d6
+
 void main ()
 {  
    //Habilitando interrupções
@@ -145,32 +169,7 @@ void main ()
    //Setando pinos como entradas digitais
    output_float(Aberta);
    output_float(Fechada);
-   /*Variável de faixa de tolerância
-   para posicionamento das juntas 
-   (por unidade de Bits do ADC)*/
-   unsigned int8 Range=4;
-   //Variáveis auxiliares para sinalização de parada(chegada no ponto) 
-   int1 a=0; int1 b=0; int1 c=0; int1 d=0; int1 e=0;
-   //Variável auxiliar para comunicação de parada, inicia em 1 para não enviar o sinal na primeira iteração
-   int1 z=1;
-   /*Variáveis para armazenamento dos valores 
-   dos sensores das juntas*/
-   unsigned int8 Junta0_Atual;
-   unsigned int8 Junta0_Desejado;
-   unsigned int8 Junta1_Atual;
-   unsigned int8 Junta1_Desejado;
-   unsigned int8 Junta2_Atual;
-   unsigned int8 Junta2_Desejado;
-   unsigned int8 Junta3_Atual;
-   unsigned int8 Junta3_Desejado;
-   int1 Garra_desejado=0;              // 1=Fechada, 0=Aberta
-   /* Variáveis auxiliares para 
-   verificação de comandos em uma 
-   nova entrada de dados desejados*/
-   unsigned int8 Aux_0;
-   unsigned int8 Aux_1;
-   unsigned int8 Aux_2;
-   unsigned int8 Aux_3;
+   
    //Setando Led na cor amarela
    output_low(Led_R);
    output_low(Led_G);
