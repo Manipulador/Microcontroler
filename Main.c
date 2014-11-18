@@ -1,21 +1,39 @@
 #include <18F4550.h>
-#device ADC = 8
-#fuses HS, NOWDT, NOPROTECT, NOLVP, BROWNOUT, MCLR, CPUDIV4
-#use delay (crystal=20000000, clock=5000000)
-#use rs232 (baud=9600, parity=N, xmit=PIN_C6, rcv=PIN_C7, bits=8)
-#int_RDA
+#device adc=8
+
+#FUSES NOWDT                    //No Watch Dog Timer
+#include <18F4550.h>
+#device adc=8
+
+#FUSES NOWDT                    //No Watch Dog Timer
+#FUSES WDT128                   //Watch Dog Timer uses 1:128 Postscale
+#FUSES PLL1                     //No PLL PreScaler
+#FUSES CPUDIV1                  //No System Clock Postscaler
+#FUSES HS                       //High speed Osc (> 4mhz for PCM/PCH) (>10mhz for PCD)
+#FUSES PUT                      //Power Up Timer
+#FUSES NOBROWNOUT               //No brownout reset
+#FUSES NOMCLR                   //Master Clear pin used for I/O
+#FUSES NOLVP                    //No low voltage prgming, B3(PIC16) or B5(PIC18) used for I/O
+#FUSES NOXINST                  //Extended set extension and Indexed Addressing mode disabled (Legacy mode)
+
+#use delay(clock=20000000)
+
+#use rs232(baud=9600,parity=N,xmit=PIN_C6,rcv=PIN_C7,bits=8,stream=PORT1)
+
+#int_RDA //Importante Limpar o Buffer! Caso contrário o promgrama fica preso na interrupção
 void RDA(void)
 { 
-         output_high(Led_R);            //Quando recebe dado aciona led na cor azul
-         output_high(Led_G);
-         output_low(Led_B);
-         
-         a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
          //Armazenando dados lidos do buffer em variáveis auxiliares
          Aux_0 = getc();
          Aux_1 = getc();
          Aux_2 = getc();
          Aux_3 = getc();
+         //output_high(Led_R);            //Quando recebe dado aciona led na cor azul
+         //output_high(Led_G);
+         //output_low(Led_B);
+         
+         a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
+        
          //Testando se os novos dados colhidos são comandos espefícos
          if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')        //Comando para parar acionamento
          {  
@@ -30,10 +48,7 @@ void RDA(void)
          //Comando para enviar dados dos sensores
          else if((char)Aux_0 == 'r' && (char)Aux_1 == 'e' && (char)Aux_2 == 'a' && (char)Aux_3 == 'd')   
          { 
-            usb_cdc_putc(Junta0_Atual);
-            usb_cdc_putc(Junta1_Atual);
-            usb_cdc_putc(Junta2_Atual);
-            usb_cdc_putc(Junta3_Atual);
+            printf("%c%c%c%c",Junta0_Atual,Junta1_Atual,Junta2_Atual,Junta3_Atual);
             z=1; //z deve ser 1 pois após o comando "read" dados não devem ser retornados 
          }
          //Comando para fechar garra
@@ -72,16 +87,20 @@ void RDA(void)
             z=0; //Zera contador (novo acionamento)
             //if (Aux_0 < 50) Junta0_Desejado = 50;           
             //else if (Aux_0 > 190) Junta0_Desejado = 190;    
-            else Junta0_Desejado = Aux_0;            
+            //else 
+            Junta0_Desejado = Aux_0;
             //if (Aux_1 < 25) Junta1_Desejado = 25;           
             //else if (Aux_1 > 195) Junta1_Desejado = 195;
-            else Junta1_Desejado = Aux_1;
+            //else 
+            Junta1_Desejado = Aux_1;
             //if (Aux_2 < 40) Junta2_Desejado = 40;
             //else if (Aux_2 > 250) Junta2_Desejado = 250;
-            else Junta2_Desejado = Aux_2;
+            //else 
+            Junta2_Desejado = Aux_2;
             //if (Aux_3 < 70) Junta3_Desejado = 70;
             //else if (Aux_3 > 190) Junta3_Desejado = 190;
-            else Junta3_Desejado = Aux_3;
+            //else 
+            Junta3_Desejado = Aux_3;
          }
 }
 
@@ -135,7 +154,7 @@ void main ()
    para posicionamento das juntas 
    (por unidade de Bits do ADC)*/
    unsigned int8 Range=4;
-   //Variáveis auxiliares para sinalização de parada 
+   //Variáveis auxiliares para sinalização de parada(chegada no ponto) 
    int1 a=0; int1 b=0; int1 c=0; int1 d=0; int1 e=0;
    //Variável auxiliar para comunicação de parada, inicia em 1 para não enviar o sinal na primeira iteração
    int1 z=1;
