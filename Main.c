@@ -1,15 +1,21 @@
 #include <18F4550.h>
-#device ADC = 8
-#fuses HS, NOWDT, NOPROTECT, NOLVP, BROWNOUT, MCLR, CPUDIV4
-#use delay (crystal=20000000, clock=5000000)
-#use rs232 (baud=9600, parity=N, xmit=PIN_C6, rcv=PIN_C7, bits=8)
+#device adc=8
 
-/*Pinos sensores
-pin_a0 (Sensor 0)
-pin_a1 (Sensor 1)
-pin_a2 (Sensor 2)
-pin_a3 (Sensor 3)
-*/
+#FUSES NOWDT                    //No Watch Dog Timer
+#FUSES WDT128                   //Watch Dog Timer uses 1:128 Postscale
+#FUSES PLL1                     //No PLL PreScaler
+#FUSES CPUDIV1                  //No System Clock Postscaler
+#FUSES HS                       //High speed Osc (> 4mhz for PCM/PCH) (>10mhz for PCD)
+#FUSES PUT                      //Power Up Timer
+#FUSES NOBROWNOUT               //No brownout reset
+#FUSES NOMCLR                   //Master Clear pin used for I/O
+#FUSES NOLVP                    //No low voltage prgming, B3(PIC16) or B5(PIC18) used for I/O
+#FUSES NOXINST                  //Extended set extension and Indexed Addressing mode disabled (Legacy mode)
+
+#use delay(clock=20000000)
+#use rs232(baud=9600,parity=N,xmit=PIN_C6,rcv=PIN_C7,bits=8,stream=PORT1)
+
+
 //Pinos sensores da Garra
 #define Aberta pin_a4
 #define Fechada pin_a5
@@ -39,45 +45,46 @@ da garra*/
 #define GarraF pin_d6
 
 /*Variável de faixa de tolerância
-para posicionamento das juntas 
-(por unidade de Bits do ADC)*/
-unsigned int8 Range=4;
-//Variáveis auxiliares para sinalização de parada 
-int1 a=0; int1 b=0; int1 c=0; int1 d=0; int1 e=0;
-//Variável auxiliar para comunicação de parada, inicia em 1 para não enviar o sinal na primeira iteração
-int1 z=1;
-/*Variáveis para armazenamento dos valores 
-dos sensores das juntas*/
-unsigned int8 Junta0_Atual;
-unsigned int8 Junta0_Desejado;
-unsigned int8 Junta1_Atual;
-unsigned int8 Junta1_Desejado;
-unsigned int8 Junta2_Atual;
-unsigned int8 Junta2_Desejado;
-unsigned int8 Junta3_Atual;
-unsigned int8 Junta3_Desejado;
-int1 Garra_desejado=0;              // 1=Fechada, 0=Aberta
-/* Variáveis auxiliares para 
-verificação de comandos em uma 
-nova entrada de dados desejados*/
-unsigned int8 Aux_0;
-unsigned int8 Aux_1;
-unsigned int8 Aux_2;
-unsigned int8 Aux_3;
+   para posicionamento das juntas 
+   (por unidade de Bits do ADC)*/
+   unsigned int8 Range=4;
+   //Variáveis auxiliares para sinalização de parada(chegada no ponto) 
+   int1 a=0; int1 b=0; int1 c=0; int1 d=0; int1 e=0;
+   //Variável auxiliar para comunicação de parada, inicia em 1 para não enviar o sinal na primeira iteração
+   int1 z=1;
+   /*Variáveis para armazenamento dos valores 
+   dos sensores das juntas*/
+   unsigned int8 Junta0_Atual;
+   unsigned int8 Junta0_Desejado;
+   unsigned int8 Junta1_Atual;
+   unsigned int8 Junta1_Desejado;
+   unsigned int8 Junta2_Atual;
+   unsigned int8 Junta2_Desejado;
+   unsigned int8 Junta3_Atual;
+   unsigned int8 Junta3_Desejado;
+   int1 Garra_desejado=0;              // 1=Fechada, 0=Aberta
+   /* Variáveis auxiliares para 
+   verificação de comandos em uma 
+   nova entrada de dados desejados*/
+   unsigned int8 Aux_0;
+   unsigned int8 Aux_1;
+   unsigned int8 Aux_2;
+   unsigned int8 Aux_3;
 
-#int_RDA
+#int_RDA //Importante Limpar o Buffer! Caso contrário o promgrama fica preso na interrupção
 void RDA(void)
 { 
-         output_high(Led_R);            //Quando recebe dado aciona led na cor azul
-         output_high(Led_G);
-         output_low(Led_B);
-         
-          a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
          //Armazenando dados lidos do buffer em variáveis auxiliares
          Aux_0 = getc();
          Aux_1 = getc();
          Aux_2 = getc();
          Aux_3 = getc();
+         //output_high(Led_R);            //Quando recebe dado aciona led na cor azul
+         //output_high(Led_G);
+         //output_low(Led_B);
+         
+         a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
+        
          //Testando se os novos dados colhidos são comandos espefícos
          if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')        //Comando para parar acionamento
          {  
@@ -92,10 +99,7 @@ void RDA(void)
          //Comando para enviar dados dos sensores
          else if((char)Aux_0 == 'r' && (char)Aux_1 == 'e' && (char)Aux_2 == 'a' && (char)Aux_3 == 'd')   
          { 
-            putc(Junta0_Atual);
-            putc(Junta1_Atual);
-            putc(Junta2_Atual);
-            putc(Junta3_Atual);
+            printf("%c%c%c%c",Junta0_Atual,Junta1_Atual,Junta2_Atual,Junta3_Atual);
             z=1; //z deve ser 1 pois após o comando "read" dados não devem ser retornados 
          }
          //Comando para fechar garra
@@ -150,6 +154,8 @@ void RDA(void)
             Junta3_Desejado = Aux_3;
          }
 }
+
+
 void main ()
 {  
    //Habilitando interrupções
@@ -163,7 +169,7 @@ void main ()
    //Setando pinos como entradas digitais
    output_float(Aberta);
    output_float(Fechada);
- 
+   
    //Setando Led na cor amarela
    output_low(Led_R);
    output_low(Led_G);

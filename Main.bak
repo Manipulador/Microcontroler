@@ -194,24 +194,24 @@ void main ()
    assim toda vez que o sistema fosse iniciado, como primeira tarefa, 
    o braço iria para uma posição inicial determinada por esses parâmetros*/
    set_adc_channel(0);
-   delay_ms(100);
+   delay_us(20);
    Junta0_Desejado = read_adc();
-   delay_ms(100);
+   delay_us(20);
    
    set_adc_channel(1);
-   delay_ms(100);
+   delay_us(20);
    Junta1_Desejado = read_adc();
-   delay_ms(100);
+   delay_us(20);
    
    set_adc_channel(2);
-   delay_ms(100);
+   delay_us(20);
    Junta2_Desejado = read_adc();
-   delay_ms(100);
+   delay_us(20);
    
    set_adc_channel(3);
-   delay_ms(100);
+   delay_us(20);
    Junta3_Desejado = read_adc();
-   delay_ms(100);
+   delay_us(20);
    
    while(true)
    {
