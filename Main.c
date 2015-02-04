@@ -23,9 +23,9 @@
 //Pinos enable para Pontes-H
 #define Enable_0 pin_d2
 #define Enable_1 pin_d3
-#define Enable_2 pin_c4
-#define Enable_3 pin_c5
-//Leds de InformaÁ„o
+#define Enable_2 pin_e0
+#define Enable_3 pin_e1
+//Leds de Informa√ß√£o
 #define Led_B pin_c0               // Azul
 #define Led_G pin_c1               // Verde
 #define Led_R pin_c2               // Vermelho
@@ -44,15 +44,15 @@ da garra*/
 #define GarraA pin_d7
 #define GarraF pin_d6
 
-/*Vari·vel de faixa de toler‚ncia
+/*Vari√°vel de faixa de toler√¢ncia
    para posicionamento das juntas 
    (por unidade de Bits do ADC)*/
    unsigned int8 Range=4;
-   //Vari·veis auxiliares para sinalizaÁ„o de parada(chegada no ponto) 
+   //Vari√°veis auxiliares para sinaliza√ß√£o de parada(chegada no ponto) 
    int1 a=0; int1 b=0; int1 c=0; int1 d=0; int1 e=0;
-   //Vari·vel auxiliar para comunicaÁ„o de parada, inicia em 1 para n„o enviar o sinal na primeira iteraÁ„o
+   //Vari√°vel auxiliar para comunica√ß√£o de parada, inicia em 1 para n√£o enviar o sinal na primeira itera√ß√£o
    int1 z=1;
-   /*Vari·veis para armazenamento dos valores 
+   /*Vari√°veis para armazenamento dos valores 
    dos sensores das juntas*/
    unsigned int8 Junta0_Atual;
    unsigned int8 Junta0_Desejado;
@@ -63,18 +63,18 @@ da garra*/
    unsigned int8 Junta3_Atual;
    unsigned int8 Junta3_Desejado;
    int1 Garra_desejado=0;              // 1=Fechada, 0=Aberta
-   /* Vari·veis auxiliares para 
-   verificaÁ„o de comandos em uma 
+   /* Vari√°veis auxiliares para 
+   verifica√ß√£o de comandos em uma 
    nova entrada de dados desejados*/
    unsigned int8 Aux_0;
    unsigned int8 Aux_1;
    unsigned int8 Aux_2;
    unsigned int8 Aux_3;
 
-#int_RDA //Importante Limpar o Buffer! Caso contr·rio o promgrama fica preso na interrupÁ„o
+#int_RDA //Importante Limpar o Buffer! Caso contr√°rio o promgrama fica preso na interrup√ß√£o
 void RDA(void)
 { 
-         //Armazenando dados lidos do buffer em vari·veis auxiliares
+         //Armazenando dados lidos do buffer em vari√°veis auxiliares
          Aux_0 = getc();
          Aux_1 = getc();
          Aux_2 = getc();
@@ -85,7 +85,7 @@ void RDA(void)
          
          a=0; b=0; c=0; d=0; e=0;   //zera todos contadores de parada
         
-         //Testando se os novos dados colhidos s„o comandos espefÌcos
+         //Testando se os novos dados colhidos s√£o comandos espef√≠cos
          if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'o' && (char)Aux_3 == 'p')        //Comando para parar acionamento
          {  
             output_low(Junta0D);output_low(Junta1D);output_low(Junta2D);output_low(Junta3D);
@@ -100,7 +100,7 @@ void RDA(void)
          else if((char)Aux_0 == 'r' && (char)Aux_1 == 'e' && (char)Aux_2 == 'a' && (char)Aux_3 == 'd')   
          { 
             printf("%c%c%c%c",Junta0_Atual,Junta1_Atual,Junta2_Atual,Junta3_Atual);
-            z=1; //z deve ser 1 pois apÛs o comando "read" dados n„o devem ser retornados 
+            z=1; //z deve ser 1 pois ap√≥s o comando "read" dados n√£o devem ser retornados 
          }
          //Comando para fechar garra
          else if((char)Aux_0 == 'g' && (char)Aux_1 == 'r' && (char)Aux_2 == 'a' && (char)Aux_3 == 'b')   
@@ -118,9 +118,9 @@ void RDA(void)
          else if((char)Aux_0 == 'l' && (char)Aux_1 == 'u' && (char)Aux_2 == 'z' && (char)Aux_3 == '!')  
          {
             output_toggle(LedGarra);
-            z=1; //z deve ser 1 pois apÛs o comando "read" dados n„o devem ser retornados 
+            z=1; //z deve ser 1 pois ap√≥s o comando "read" dados n√£o devem ser retornados 
          }
-         //Comando para posiÁ„o de repouso
+         //Comando para posi√ß√£o de repouso
          else if((char)Aux_0 == 's' && (char)Aux_1 == 't' && (char)Aux_2 == 'n' && (char)Aux_3 == 'd')   
          {
             Junta0_Desejado = 127;
@@ -129,10 +129,10 @@ void RDA(void)
             Junta3_Desejado = 127;
             z=0; //Zera contador (novo acionamento)
          }
-         /*Se n„o s„o comandos, ser„o dados de novas posiÁıes desejadas:
+         /*Se n√£o s√£o comandos, ser√£o dados de novas posi√ß√µes desejadas:
          Limita extremo inferior**
          Limita extremo superior**
-         Atribui nova posiÁ„o desejada */
+         Atribui nova posi√ß√£o desejada */
          else                                                             
          {
             z=0; //Zera contador (novo acionamento)
@@ -158,11 +158,11 @@ void RDA(void)
 
 void main ()
 {  
-   //Habilitando interrupÁıes
+   //Habilitando interrup√ß√µes
    enable_interrupts(INT_RDA);
    enable_interrupts(GLOBAL);
    /*Setando portas de leitura 
-   analÛgica*/
+   anal√≥gica*/
    SETUP_ADC_PORTS(AN0_TO_AN3);
    SETUP_ADC(ADC_CLOCK_INTERNAL);
    delay_us(20);
@@ -194,11 +194,11 @@ void main ()
    output_low(LedGarra);
    /*Atribuindo os valores desejados para as juntas 
    como os valores obtidos pela leitura do ADC.
-   Isto È feito para que, durante a primeira iteraÁ„o,
-   os valores desejados para as juntas sejam v·lidos (e n„o um lixo).
-   Uma possibilidade seria definir esses valores iniciais como par‚metros,
+   Isto √© feito para que, durante a primeira itera√ß√£o,
+   os valores desejados para as juntas sejam v√°lidos (e n√£o um lixo).
+   Uma possibilidade seria definir esses valores iniciais como par√¢metros,
    assim toda vez que o sistema fosse iniciado, como primeira tarefa, 
-   o braÁo iria para uma posiÁ„o inicial determinada por esses par‚metros*/
+   o bra√ßo iria para uma posi√ß√£o inicial determinada por esses par√¢metros*/
    set_adc_channel(0);
    delay_us(20);
    Junta0_Desejado = read_adc();
@@ -230,7 +230,7 @@ void main ()
       
       if (Junta0_Desejado < Junta0_Atual-Range || Junta0_Desejado > Junta0_Atual+Range)  //Fora do range
       {
-         //Seta enable (ProvisÛrio -> atÈ que sejam usados PWMs)
+         //Seta enable (Provis√≥rio -> at√© que sejam usados PWMs)
          output_high(Enable_0);
          
          if(Junta0_Desejado < Junta0_Atual-Range)  //Depois do valor desejado
@@ -263,7 +263,7 @@ void main ()
       
       if (Junta1_Desejado < Junta1_Atual-Range || Junta1_Desejado > Junta1_Atual+Range)   //Fora do range
       {
-         //Seta enable (ProvisÛrio -> atÈ que sejam usados PWMs)
+         //Seta enable (Provis√≥rio -> at√© que sejam usados PWMs)
          output_high(Enable_1);
          
          if(Junta1_Desejado < Junta1_Atual-Range)  //Depois do valor desejado
@@ -296,7 +296,7 @@ void main ()
       
       if (Junta2_Desejado < Junta2_Atual-Range || Junta2_Desejado > Junta2_Atual+Range)  //Fora do range
       {
-         //Seta enable (ProvisÛrio -> atÈ que sejam usados PWMs)
+         //Seta enable (Provis√≥rio -> at√© que sejam usados PWMs)
          output_high(Enable_2);
          
          if(Junta2_Desejado < Junta2_Atual-Range)  //Depois do valor desejado 
@@ -329,7 +329,7 @@ void main ()
       
       if (Junta3_Desejado < Junta3_Atual-Range || Junta3_Desejado > Junta3_Atual+Range)  //Fora do range
       {
-         //Seta enable (ProvisÛrio -> atÈ que sejam usados PWMs)
+         //Seta enable (Provis√≥rio -> at√© que sejam usados PWMs)
          output_high(Enable_3);
          
          if(Junta3_Desejado < Junta3_Atual-Range)  //Depois do valor desejado 
@@ -354,29 +354,28 @@ void main ()
       }
       
       ////Acionamento da Garra
-      if (Garra_desejado==1 && input(Fechada)!=0)   //Quer fechar mas ainda n„o fechou
+      if (Garra_desejado==1 && input(Fechada)!=0)   //Quer fechar mas ainda n√£o fechou
       {
          output_high (GarraF);
          output_low (GarraA);
       }
-      else if (Garra_desejado==0 && input(Aberta)!=0)   //Quer abrir mas ainda n„o abriu
+      else if (Garra_desejado==0 && input(Aberta)!=0)   //Quer abrir mas ainda n√£o abriu
       {
          output_high (GarraA);
          output_low (GarraF);
       }
-      else  //N„o quer fechar nem abrir
+      else  //N√£o quer fechar nem abrir
       {
          output_low (GarraF);
          output_low (GarraA);
          e=1;  //Contador de parada
       }
       
-      //ComunicaÁ„o e sinalizaÁ„o de parada
-      if (a==1 && b==1 && c==1 && d==1 && e==1)  //Todos os sensores j· chegaram 
+      //Comunica√ß√£o e sinaliza√ß√£o de parada
+      if (a==1 && b==1 && c==1 && d==1 && e==1)  //Todos os sensores j√° chegaram 
       {
-         if(z==0)                // O 'z' somente ser· zero quando um novo dado chegar no buffer 
+         if(z==0)                // O 'z' somente ser√° zero quando um novo dado chegar no buffer 
          {                      //e este for um dado de posicionamento
-            printf("OK");
             z=1;
          }
       }
